@@ -84,15 +84,23 @@ class Vrobo_Database {
             $params = array($search_param, $search_param, intval($search));
         }
         
-        // Build query properly without table name interpolation
+        // Build query properly without direct variable interpolation
         if (!empty($search)) {
-            $base_query = "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE customer_email LIKE %s OR customer_name LIKE %s OR order_id = %d ORDER BY created_date DESC LIMIT %d OFFSET %d";
-            $params[] = $limit;
-            $params[] = $offset;
-            $orders = $wpdb->get_results($wpdb->prepare($base_query, $params));
+            $search_param = '%' . $wpdb->esc_like($search) . '%';
+            $orders = $wpdb->get_results($wpdb->prepare(
+                "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE customer_email LIKE %s OR customer_name LIKE %s OR order_id = %d ORDER BY created_date DESC LIMIT %d OFFSET %d",
+                $search_param,
+                $search_param,
+                intval($search),
+                $limit,
+                $offset
+            ));
         } else {
-            $base_query = "SELECT * FROM `{$wpdb->prefix}vrobo_orders` ORDER BY created_date DESC LIMIT %d OFFSET %d";
-            $orders = $wpdb->get_results($wpdb->prepare($base_query, $limit, $offset));
+            $orders = $wpdb->get_results($wpdb->prepare(
+                "SELECT * FROM `{$wpdb->prefix}vrobo_orders` ORDER BY created_date DESC LIMIT %d OFFSET %d",
+                $limit,
+                $offset
+            ));
         }
         
         return $orders;
@@ -105,10 +113,9 @@ class Vrobo_Database {
         global $wpdb;
         
         if (!empty($search)) {
-            $base_query = "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE customer_email LIKE %s OR customer_name LIKE %s OR order_id = %d";
             $search_param = '%' . $wpdb->esc_like($search) . '%';
             $count = $wpdb->get_var($wpdb->prepare(
-                $base_query,
+                "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE customer_email LIKE %s OR customer_name LIKE %s OR order_id = %d",
                 $search_param,
                 $search_param,
                 intval($search)
