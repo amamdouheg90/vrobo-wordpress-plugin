@@ -70,14 +70,12 @@ class Vrobo_Database {
     }
     
     /**
-     * Get all orders from custom table
+     * Get orders from custom table
      */
     public function get_orders($limit = 20, $offset = 0, $search = '') {
         global $wpdb;
         
         $table_name = $wpdb->prefix . 'vrobo_orders';
-        
-        $where = '';
         $params = array();
         
         if (!empty($search)) {
@@ -86,14 +84,15 @@ class Vrobo_Database {
             $params = array($search_param, $search_param, intval($search));
         }
         
-        $sql = "SELECT * FROM $table_name $where ORDER BY created_date DESC LIMIT %d OFFSET %d";
-        $params[] = $limit;
-        $params[] = $offset;
-        
-        if (!empty($params)) {
-            $orders = $wpdb->get_results($wpdb->prepare($sql, $params));
+        // Build query properly without table name interpolation
+        if (!empty($search)) {
+            $base_query = "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE customer_email LIKE %s OR customer_name LIKE %s OR order_id = %d ORDER BY created_date DESC LIMIT %d OFFSET %d";
+            $params[] = $limit;
+            $params[] = $offset;
+            $orders = $wpdb->get_results($wpdb->prepare($base_query, $params));
         } else {
-            $orders = $wpdb->get_results($wpdb->prepare($sql, $limit, $offset));
+            $base_query = "SELECT * FROM `{$wpdb->prefix}vrobo_orders` ORDER BY created_date DESC LIMIT %d OFFSET %d";
+            $orders = $wpdb->get_results($wpdb->prepare($base_query, $limit, $offset));
         }
         
         return $orders;
@@ -105,19 +104,17 @@ class Vrobo_Database {
     public function get_orders_count($search = '') {
         global $wpdb;
         
-        $table_name = $wpdb->prefix . 'vrobo_orders';
-        
         if (!empty($search)) {
-            $where = "WHERE customer_email LIKE %s OR customer_name LIKE %s OR order_id = %d";
+            $base_query = "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE customer_email LIKE %s OR customer_name LIKE %s OR order_id = %d";
             $search_param = '%' . $wpdb->esc_like($search) . '%';
             $count = $wpdb->get_var($wpdb->prepare(
-                "SELECT COUNT(*) FROM $table_name $where",
+                $base_query,
                 $search_param,
                 $search_param,
                 intval($search)
             ));
         } else {
-            $count = $wpdb->get_var("SELECT COUNT(*) FROM $table_name");
+            $count = $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders`");
         }
         
         return intval($count);
@@ -129,10 +126,8 @@ class Vrobo_Database {
     public function get_order($order_id) {
         global $wpdb;
         
-        $table_name = $wpdb->prefix . 'vrobo_orders';
-        
         $order = $wpdb->get_row($wpdb->prepare(
-            "SELECT * FROM $table_name WHERE order_id = %d",
+            "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE order_id = %d",
             $order_id
         ));
         
@@ -288,10 +283,8 @@ class Vrobo_Database {
     public function get_order_logs($order_id, $limit = 50) {
         global $wpdb;
         
-        $logs_table = $wpdb->prefix . 'vrobo_logs';
-        
         $logs = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM $logs_table WHERE order_id = %d ORDER BY created_date DESC LIMIT %d",
+            "SELECT * FROM `{$wpdb->prefix}vrobo_logs` WHERE order_id = %d ORDER BY created_date DESC LIMIT %d",
             $order_id,
             $limit
         ));
@@ -408,16 +401,14 @@ class Vrobo_Database {
     public function get_stats() {
         global $wpdb;
         
-        $table_name = $wpdb->prefix . 'vrobo_orders';
-        
         $stats = array(
-            'total_orders' => $wpdb->get_var("SELECT COUNT(*) FROM $table_name"),
-            'pending_api' => $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE webhook_status = 'pending'"),
-            'sent_api' => $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE webhook_status = 'sent'"),
-            'failed_api' => $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE webhook_status = 'failed'"),
-            'skipped_api' => $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE webhook_status = 'skipped'"),
-            'total_revenue' => $wpdb->get_var("SELECT SUM(order_total) FROM $table_name"),
-            'recent_orders' => $wpdb->get_var("SELECT COUNT(*) FROM $table_name WHERE created_date >= DATE_SUB(NOW(), INTERVAL 24 HOUR)")
+            'total_orders' => $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders`"),
+            'pending_api' => $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE webhook_status = 'pending'"),
+            'sent_api' => $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE webhook_status = 'sent'"),
+            'failed_api' => $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE webhook_status = 'failed'"),
+            'skipped_api' => $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE webhook_status = 'skipped'"),
+            'total_revenue' => $wpdb->get_var("SELECT SUM(order_total) FROM `{$wpdb->prefix}vrobo_orders`"),
+            'recent_orders' => $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE created_date >= DATE_SUB(NOW(), INTERVAL 24 HOUR)")
         );
         
         return $stats;
