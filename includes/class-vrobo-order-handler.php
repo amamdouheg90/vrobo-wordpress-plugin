@@ -682,11 +682,8 @@ class Vrobo_Order_Handler {
             }
         }
         
-        // Build final WHERE clause
-        $where_clause = '';
-        if (!empty($where_conditions)) {
-            $where_clause = ' WHERE ' . implode(' AND ', $where_conditions);
-        }
+        // Build final WHERE clause (no longer needed as a separate variable)
+        // Removed $where_clause as we now build the query directly
         
         // Prepare final query parameters
         $final_params = array_merge($query_params, array($per_page, $offset));
@@ -703,10 +700,8 @@ class Vrobo_Order_Handler {
         // Execute main query
         // Direct database queries are necessary for custom plugin table - no WordPress API equivalent
         if (!empty($where_conditions)) {
-            $sql = $wpdb->prepare(
-                "SELECT * FROM {$wpdb->prefix}vrobo_orders" . $where_clause . " ORDER BY created_date DESC LIMIT %d OFFSET %d",
-                $final_params
-            );
+            $base_query = "SELECT * FROM {$wpdb->prefix}vrobo_orders WHERE " . implode(' AND ', $where_conditions) . " ORDER BY created_date DESC LIMIT %d OFFSET %d";
+            $sql = $wpdb->prepare($base_query, $final_params);
         } else {
             $sql = $wpdb->prepare(
                 "SELECT * FROM {$wpdb->prefix}vrobo_orders ORDER BY created_date DESC LIMIT %d OFFSET %d",
@@ -725,15 +720,12 @@ class Vrobo_Order_Handler {
         
         // Get total count - Direct database query necessary for custom plugin table
         if (!empty($where_conditions)) {
-            $count_sql = $wpdb->prepare(
-                "SELECT COUNT(*) FROM {$wpdb->prefix}vrobo_orders" . $where_clause,
-                $query_params
-            );
+            $count_base_query = "SELECT COUNT(*) FROM {$wpdb->prefix}vrobo_orders WHERE " . implode(' AND ', $where_conditions);
+            $count_sql = $wpdb->prepare($count_base_query, $query_params);
+            $total = $wpdb->get_var($count_sql);
         } else {
-            $count_sql = "SELECT COUNT(*) FROM {$wpdb->prefix}vrobo_orders";
+            $total = $wpdb->get_var("SELECT COUNT(*) FROM {$wpdb->prefix}vrobo_orders");
         }
-        
-        $total = $wpdb->get_var($count_sql);
         
         $response = array(
             'orders' => $orders,
