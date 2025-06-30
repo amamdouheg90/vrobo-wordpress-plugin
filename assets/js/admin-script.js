@@ -18,6 +18,7 @@
             this.bindEvents();
             this.initTooltips();
             this.autoRefresh();
+            this.initOrdersTable();
         },
 
         // Bind event handlers
@@ -570,11 +571,215 @@
                 case 'pending': return 'pending';
                 default: return '';
             }
+        },
+
+        // Initialize orders table
+        initOrdersTable: function () {
+            if ($('#vrobo-orders-table').length) {
+                this.loadOrders();
+                this.bindOrdersEvents();
+            }
+        },
+
+        // Bind orders table events
+        bindOrdersEvents: function () {
+            // Search functionality
+            $('#vrobo-search-btn').on('click', function () {
+                VRoboAdmin.loadOrders();
+            });
+
+            $('#vrobo-clear-btn').on('click', function () {
+                $('#vrobo-search').val('');
+                VRoboAdmin.loadOrders();
+            });
+
+            $('#vrobo-search').on('keypress', function (e) {
+                if (e.which === 13) { // Enter key
+                    VRoboAdmin.loadOrders();
+                }
+            });
+
+            // Status filters
+            $('.vrobo-status-filter').on('click', function () {
+                $('.vrobo-status-filter').removeClass('active');
+                $(this).addClass('active');
+                VRoboAdmin.loadOrders();
+            });
+
+            // Per page change
+            $('#vrobo-per-page').on('change', function () {
+                VRoboAdmin.loadOrders();
+            });
+
+            // Pagination clicks
+            $(document).on('click', '.vrobo-pagination-controls a', function (e) {
+                e.preventDefault();
+                const page = $(this).data('page');
+                VRoboAdmin.loadOrders(page);
+            });
+
+            // View order button
+            $(document).on('click', '.vrobo-view-order', function (e) {
+                e.preventDefault();
+                const orderId = $(this).data('order');
+                VRoboAdmin.viewOrder(orderId);
+            });
+        },
+
+        // Load orders via AJAX
+        loadOrders: function (page = 1) {
+            const search = $('#vrobo-search').val();
+            const status = $('.vrobo-status-filter.active').data('status') || '';
+            const perPage = $('#vrobo-per-page').val() || 20;
+
+            $('#vrobo-loading').show();
+            $('#vrobo-orders-tbody').empty();
+
+            $.ajax({
+                url: vrobo_ajax.ajax_url,
+                type: 'POST',
+                data: {
+                    action: 'vrobo_get_orders_table',
+                    page: page,
+                    per_page: perPage,
+                    search: search,
+                    status: status,
+                    nonce: vrobo_ajax.nonce
+                },
+                success: function (response) {
+                    $('#vrobo-loading').hide();
+
+                    if (response.success && response.data) {
+                        VRoboAdmin.renderOrdersTable(response.data);
+                    } else {
+                        $('#vrobo-orders-tbody').html('<tr><td colspan="9">No orders found or error loading orders.</td></tr>');
+                        console.error('Orders loading error:', response);
+                    }
+                },
+                error: function (xhr, status, error) {
+                    $('#vrobo-loading').hide();
+                    $('#vrobo-orders-tbody').html('<tr><td colspan="9">Error loading orders. Please refresh the page.</td></tr>');
+                    console.error('AJAX error:', error, xhr.responseText);
+                }
+            });
+        },
+
+        // Render orders table
+        renderOrdersTable: function (data) {
+            const orders = data.orders || [];
+            const pagination = data.pagination || {};
+            let html = '';
+
+            if (orders.length === 0) {
+                html = '<tr><td colspan="9">No orders found.</td></tr>';
+            } else {
+                orders.forEach(function (order) {
+                    html += VRoboAdmin.renderOrderRow(order);
+                });
+            }
+
+            $('#vrobo-orders-tbody').html(html);
+            VRoboAdmin.renderPagination(pagination);
+        },
+
+        // Render single order row
+        renderOrderRow: function (order) {
+            const statusClass = VRoboAdmin.getStatusClass(order.order_status);
+
+            return `
+                <tr data-order-id="${order.order_id}">
+                    <td>
+                        <strong>#${order.order_id}</strong>
+                        <div class="order-total">$${parseFloat(order.order_total).toFixed(2)}</div>
+                    </td>
+                    <td>
+                        <div class="customer-name">${VRoboAdmin.escapeHtml(order.customer_name)}</div>
+                        <div class="customer-email">${VRoboAdmin.escapeHtml(order.customer_email)}</div>
+                    </td>
+                    <td><span class="order-status ${statusClass}">${VRoboAdmin.escapeHtml(order.order_status)}</span></td>
+                    <td>${VRoboAdmin.escapeHtml(order.last_action || '-')}</td>
+                    <td>${VRoboAdmin.escapeHtml(order.tags || '-')}</td>
+                    <td>${VRoboAdmin.escapeHtml(order.note || '-')}</td>
+                    <td>${VRoboAdmin.formatDate(order.created_date)}</td>
+                    <td>${VRoboAdmin.formatDate(order.updated_date)}</td>
+                    <td>
+                        <div class="order-actions">
+                            <button class="button button-small vrobo-view-order" data-order="${order.order_id}">View</button>
+                        </div>
+                    </td>
+                </tr>
+            `;
+        },
+
+        // Render pagination
+        renderPagination: function (pagination) {
+            if (!pagination || pagination.total_pages <= 1) {
+                $('#vrobo-pagination-controls').empty();
+                return;
+            }
+
+            let html = '';
+            const currentPage = pagination.page;
+            const totalPages = pagination.total_pages;
+
+            // Previous button
+            if (currentPage > 1) {
+                html += `<a href="#" class="button" data-page="${currentPage - 1}">« Previous</a>`;
+            }
+
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                if (i === currentPage) {
+                    html += `<span class="button button-primary">${i}</span>`;
+                } else {
+                    html += `<a href="#" class="button" data-page="${i}">${i}</a>`;
+                }
+            }
+
+            // Next button
+            if (currentPage < totalPages) {
+                html += `<a href="#" class="button" data-page="${currentPage + 1}">Next »</a>`;
+            }
+
+            $('#vrobo-pagination-controls').html(html);
+        },
+
+        // Get status CSS class
+        getStatusClass: function (status) {
+            switch (status) {
+                case 'completed': return 'status-completed';
+                case 'processing': return 'status-processing';
+                case 'cancelled': return 'status-cancelled';
+                case 'pending': return 'status-pending';
+                default: return 'status-' + status;
+            }
+        },
+
+        // Escape HTML
+        escapeHtml: function (text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        },
+
+        // View order functionality
+        viewOrder: function (orderId) {
+            // Open WooCommerce order edit page in new tab
+            const editUrl = vrobo_ajax.admin_url + 'post.php?post=' + orderId + '&action=edit';
+            window.open(editUrl, '_blank');
         }
     };
 
     // Make VRoboAdmin globally available
     window.VRoboAdmin = VRoboAdmin;
+
+    // Global loadOrders function for compatibility
+    window.loadOrders = function (page) {
+        if (VRoboAdmin && VRoboAdmin.loadOrders) {
+            VRoboAdmin.loadOrders(page);
+        }
+    };
 
     // jQuery plugins for common functionality
     $.fn.vroboSpinner = function (show = true) {

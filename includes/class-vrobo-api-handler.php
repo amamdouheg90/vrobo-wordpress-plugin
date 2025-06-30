@@ -2,6 +2,21 @@
 /**
  * API Handler Class
  * Handles REST API endpoints and authentication
+ * 
+ * SECURITY ARCHITECTURE OVERVIEW:
+ * This class implements two types of API endpoints with different security models:
+ * 
+ * 1. WordPress REST API Endpoints (admin users):
+ *    - Use WordPress authentication and capability checks
+ *    - Accessible via /wp-json/vrobo/v1/ routes
+ *    - Intended for WordPress admin dashboard usage
+ * 
+ * 2. External AJAX Endpoints (machine-to-machine):
+ *    - Use API key authentication instead of nonces
+ *    - Accessible via wp-admin/admin-ajax.php with specific actions
+ *    - Intended for external automation systems (n8n, Zapier, etc.)
+ *    - Cannot use WordPress nonces as external systems have no session context
+ *    - Follows industry standards for external API authentication
  */
 
 if (!defined('ABSPATH')) {
@@ -174,6 +189,7 @@ class Vrobo_API_Handler {
         $per_page = $request->get_param('per_page') ?: 20;
         $offset = ($page - 1) * $per_page;
         
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct database query is necessary for custom plugin table - no WordPress API equivalent. No caching used as this is a real-time API response.
         $orders = $wpdb->get_results($wpdb->prepare(
             "SELECT * FROM `{$wpdb->prefix}vrobo_orders` ORDER BY created_date DESC LIMIT %d OFFSET %d",
             $per_page,
@@ -181,6 +197,7 @@ class Vrobo_API_Handler {
         ));
         
         $total = $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders`");
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         
         $response = array(
             'orders' => $orders,
@@ -209,10 +226,12 @@ class Vrobo_API_Handler {
         
         // Get from custom database
         global $wpdb;
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct database query is necessary for custom plugin table - no WordPress API equivalent. No caching used as this is a real-time API response.
         $custom_order = $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE order_id = %d",
             $order_id
         ));
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         
         $response = array(
             'wc_order' => array(
@@ -307,15 +326,28 @@ class Vrobo_API_Handler {
     /**
      * Handle webhook requests
      */
+    /**
+     * Handle webhook endpoint
+     * Note: This endpoint receives data from external Vrobo systems and uses API key authentication
+     * rather than WordPress nonces since it's not a user-initiated action from the WordPress admin
+     */
     public function handle_webhook($request) {
+        // Verify API key for external webhook access
+        $api_key = $request->get_header('X-API-Key');
+        if (empty($api_key)) {
+            $api_key = $request->get_param('api_key');
+        }
+        
+        if (!$this->verify_external_api_key($api_key)) {
+            wp_send_json_error('Invalid API key', 401);
+        }
+        
         // Get the raw POST data
         $raw_data = file_get_contents('php://input');
         $body = json_decode($raw_data, true);
         
         if (!$body) {
-            http_response_code(400);
-            echo json_encode(array('error' => 'Invalid JSON data'));
-            exit;
+            wp_send_json_error('Invalid JSON data', 400);
         }
         
         // Process webhook data based on type
@@ -358,6 +390,7 @@ class Vrobo_API_Handler {
         global $wpdb;
         $table_name = $wpdb->prefix . 'vrobo_orders';
         
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct database query is necessary for custom plugin table - no WordPress API equivalent. No caching used as this is a webhook processing that requires immediate persistence.
         $wpdb->update(
             $table_name,
             array(
@@ -368,6 +401,7 @@ class Vrobo_API_Handler {
             array('%s', '%s'),
             array('%d')
         );
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
     }
     
     /**
@@ -430,16 +464,27 @@ class Vrobo_API_Handler {
     
     /**
      * Handle external order update (full)
-     * Note: This is an external API endpoint that uses API key authentication
-     * instead of WordPress nonces, as it's designed for external system integration
+     * 
+     * SECURITY NOTE: This is an external API endpoint designed for machine-to-machine communication
+     * from external automation systems (like n8n, Zapier, etc.). It uses API key authentication
+     * instead of WordPress nonces for the following reasons:
+     * 
+     * 1. External systems cannot obtain WordPress nonces (they're session-based)
+     * 2. API key authentication is the industry standard for external API access
+     * 3. The API key is validated before any data processing occurs
+     * 4. All input data is properly sanitized after API key verification
+     * 5. This endpoint is NOT accessible to WordPress users - only external systems with valid API keys
+     * 
+     * This approach follows WordPress.org guidelines for external API integrations and ensures
+     * security while enabling necessary automation functionality.
      */
     public function handle_external_update() {
+        // phpcs:disable WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended -- External API uses API key authentication instead of WordPress nonces
+        
         // Verify API key - External API authentication, not WordPress session-based
         $api_key = '';
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- External API uses API key authentication
         if (isset($_POST['api_key'])) {
             $api_key = sanitize_text_field(wp_unslash($_POST['api_key']));
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- External API uses API key authentication
         } elseif (isset($_GET['api_key'])) {
             $api_key = sanitize_text_field(wp_unslash($_GET['api_key']));
         }
@@ -449,7 +494,6 @@ class Vrobo_API_Handler {
             return;
         }
         
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- External API uses API key authentication
         $order_id = isset($_POST['order_id']) ? intval($_POST['order_id']) : 0;
         if (!$order_id) {
             wp_send_json_error('Order ID required', 400);
@@ -460,28 +504,24 @@ class Vrobo_API_Handler {
         
         // Prepare plugin data - All POST data sanitized after API key verification
         $plugin_data = array();
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- External API uses API key authentication
         if (isset($_POST['last_action'])) {
             $plugin_data['last_action'] = sanitize_text_field(wp_unslash($_POST['last_action']));
         }
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- External API uses API key authentication
         if (isset($_POST['tags'])) {
             $plugin_data['tags'] = sanitize_text_field(wp_unslash($_POST['tags']));
         }
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- External API uses API key authentication
         if (isset($_POST['note'])) {
             $plugin_data['note'] = sanitize_textarea_field(wp_unslash($_POST['note']));
         }
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- External API uses API key authentication
         if (isset($_POST['webhook_status'])) {
             $plugin_data['webhook_status'] = sanitize_text_field(wp_unslash($_POST['webhook_status']));
         }
         
         // WooCommerce updates
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- External API uses API key authentication
         $woo_status = isset($_POST['woo_status']) ? sanitize_text_field(wp_unslash($_POST['woo_status'])) : null;
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- External API uses API key authentication
         $woo_note = isset($_POST['woo_note']) ? sanitize_textarea_field(wp_unslash($_POST['woo_note'])) : '';
+        
+        // phpcs:enable WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended
         
         // Update both databases
         $success = $vrobo_db->update_full_order($order_id, $plugin_data, $woo_status, $woo_note);
@@ -501,16 +541,18 @@ class Vrobo_API_Handler {
     
     /**
      * Handle external status update (WooCommerce only)
-     * Note: This is an external API endpoint that uses API key authentication
-     * instead of WordPress nonces, as it's designed for external system integration
+     * 
+     * SECURITY NOTE: This is an external API endpoint designed for machine-to-machine communication.
+     * See detailed security explanation in handle_external_update() method above.
+     * Uses API key authentication instead of WordPress nonces for external system compatibility.
      */
     public function handle_external_status_update() {
+        // phpcs:disable WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended -- External API uses API key authentication instead of WordPress nonces
+        
         // Verify API key - External API authentication, not WordPress session-based
         $api_key = '';
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- External API uses API key authentication
         if (isset($_POST['api_key'])) {
             $api_key = sanitize_text_field(wp_unslash($_POST['api_key']));
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- External API uses API key authentication
         } elseif (isset($_GET['api_key'])) {
             $api_key = sanitize_text_field(wp_unslash($_GET['api_key']));
         }
@@ -520,12 +562,11 @@ class Vrobo_API_Handler {
             return;
         }
         
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- External API uses API key authentication
         $order_id = isset($_POST['order_id']) ? intval($_POST['order_id']) : 0;
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- External API uses API key authentication  
         $new_status = isset($_POST['status']) ? sanitize_text_field(wp_unslash($_POST['status'])) : '';
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- External API uses API key authentication
         $note = isset($_POST['note']) ? sanitize_textarea_field(wp_unslash($_POST['note'])) : '';
+        
+        // phpcs:enable WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended
         
         if (!$order_id || !$new_status) {
             wp_send_json_error('Order ID and status required', 400);
@@ -548,16 +589,18 @@ class Vrobo_API_Handler {
     
     /**
      * Handle external note addition
-     * Note: This is an external API endpoint that uses API key authentication
-     * instead of WordPress nonces, as it's designed for external system integration
+     * 
+     * SECURITY NOTE: This is an external API endpoint designed for machine-to-machine communication.
+     * See detailed security explanation in handle_external_update() method above.
+     * Uses API key authentication instead of WordPress nonces for external system compatibility.
      */
     public function handle_external_note() {
+        // phpcs:disable WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended -- External API uses API key authentication instead of WordPress nonces
+        
         // Verify API key - External API authentication, not WordPress session-based
         $api_key = '';
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- External API uses API key authentication
         if (isset($_POST['api_key'])) {
             $api_key = sanitize_text_field(wp_unslash($_POST['api_key']));
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- External API uses API key authentication
         } elseif (isset($_GET['api_key'])) {
             $api_key = sanitize_text_field(wp_unslash($_GET['api_key']));
         }
@@ -567,12 +610,11 @@ class Vrobo_API_Handler {
             return;
         }
         
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- External API uses API key authentication
         $order_id = isset($_POST['order_id']) ? intval($_POST['order_id']) : 0;
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- External API uses API key authentication
         $note = isset($_POST['note']) ? sanitize_textarea_field(wp_unslash($_POST['note'])) : '';
-        // phpcs:ignore WordPress.Security.NonceVerification.Missing -- External API uses API key authentication
         $is_customer_note = isset($_POST['is_customer_note']) ? (bool) $_POST['is_customer_note'] : false;
+        
+        // phpcs:enable WordPress.Security.NonceVerification.Missing, WordPress.Security.NonceVerification.Recommended
         
         if (!$order_id || !$note) {
             wp_send_json_error('Order ID and note required', 400);

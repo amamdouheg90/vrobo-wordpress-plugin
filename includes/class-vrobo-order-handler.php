@@ -42,7 +42,7 @@ class Vrobo_Order_Handler {
         }
         
         // Check if webhook is enabled and API key is configured
-        if (!$this->api_key || !$this->webhook_url || !get_option('vrobo_wc_api_validated', false)) {
+        if (!$this->api_key || !$this->webhook_url || !get_option('vrobo_wc_api_key_validated', false)) {
             return;
         }
         
@@ -124,6 +124,7 @@ class Vrobo_Order_Handler {
             // Direct database query is necessary here as we're updating a custom plugin table
             // that has no WordPress API equivalent. This is the standard approach for plugin-specific data.
             // No caching used as this is a real-time webhook status update that must be immediate.
+            // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct database query is necessary for custom plugin table - no WordPress API equivalent. No caching used as this is a real-time webhook status update that must be immediate.
             $wpdb->update(
                 $table_name,
                 array(
@@ -134,6 +135,7 @@ class Vrobo_Order_Handler {
                 array('%s', '%s'),
                 array('%d')
             );
+            // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             
             return;
         }
@@ -162,10 +164,12 @@ class Vrobo_Order_Handler {
         $existing = wp_cache_get($cache_key, 'vrobo_orders');
         
         if ($existing === false) {
+            // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct database query is necessary for custom plugin table - no WordPress API equivalent. Cache is implemented above.
             $existing = $wpdb->get_var($wpdb->prepare(
                 "SELECT id FROM {$wpdb->prefix}vrobo_orders WHERE order_id = %d",
                 $order_id
             ));
+            // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
             // Cache the result for 5 minutes to reduce duplicate database queries
             wp_cache_set($cache_key, $existing, 'vrobo_orders', 5 * MINUTE_IN_SECONDS);
         }
@@ -176,6 +180,7 @@ class Vrobo_Order_Handler {
         
         // Direct database query is necessary for custom plugin table - no WordPress API equivalent
         // No caching used as this is a real-time order creation that must be immediate.
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct database query is necessary for custom plugin table - no WordPress API equivalent. No caching used as this is a real-time order creation that must be immediate.
         $result = $wpdb->insert(
             $table_name,
             array(
@@ -189,6 +194,7 @@ class Vrobo_Order_Handler {
             ),
             array('%d', '%s', '%s', '%s', '%f', '%s', '%s')
         );
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         
         // Clear cache after successful insert
         if ($result !== false) {
@@ -208,6 +214,7 @@ class Vrobo_Order_Handler {
         
         // Direct database query is necessary for custom plugin table - no WordPress API equivalent
         // No caching used as this is a real-time order status update that must be immediate.
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct database query is necessary for custom plugin table - no WordPress API equivalent. No caching used as this is a real-time order status update that must be immediate.
         $result = $wpdb->update(
             $table_name,
             array(
@@ -218,6 +225,7 @@ class Vrobo_Order_Handler {
             array('%s', '%s'),
             array('%d')
         );
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         
         return $result !== false;
     }
@@ -502,6 +510,7 @@ class Vrobo_Order_Handler {
         
         // Direct database query is necessary for custom plugin table - no WordPress API equivalent
         // No caching used as this is a real-time webhook status update that must be immediate.
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct database query is necessary for custom plugin table - no WordPress API equivalent. No caching used as this is a real-time webhook status update that must be immediate.
         $wpdb->update(
             $table_name,
             array(
@@ -512,6 +521,7 @@ class Vrobo_Order_Handler {
             array('%s', '%s'),
             array('%d')
         );
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
     }
     
     /**
@@ -555,6 +565,7 @@ class Vrobo_Order_Handler {
         
         // Direct database query is necessary for custom plugin table - no WordPress API equivalent
         // No caching used as this is a real-time webhook status update that must be immediate.
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct database query is necessary for custom plugin table - no WordPress API equivalent. No caching used as this is a real-time webhook status update that must be immediate.
         $wpdb->update(
             $table_name,
             array(
@@ -566,6 +577,7 @@ class Vrobo_Order_Handler {
             array('%s', '%s', '%s'),
             array('%d')
         );
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
     }
     
     /**
@@ -599,6 +611,7 @@ class Vrobo_Order_Handler {
         $table_name = $wpdb->prefix . 'vrobo_orders';
         // Direct database query is necessary for custom plugin table - no WordPress API equivalent
         // No caching used as this is a real-time cancellation status update that must be immediate.
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct database query is necessary for custom plugin table - no WordPress API equivalent. No caching used as this is a real-time cancellation status update that must be immediate.
         $result = $wpdb->update(
             $table_name,
             array(
@@ -610,6 +623,7 @@ class Vrobo_Order_Handler {
             array('%s', '%s', '%s'),
             array('%d')
         );
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         
         if ($result === false) {
             wp_send_json_error('Failed to update order status');
@@ -646,6 +660,10 @@ class Vrobo_Order_Handler {
         $status_filter = isset($_POST['status']) ? sanitize_text_field(wp_unslash($_POST['status'])) : '';
         $offset = ($page - 1) * $per_page;
         
+        // Sanitize LIMIT and OFFSET values as integers
+        $per_page = absint($per_page);
+        $offset = absint($offset);
+        
         // Create cache key based on query parameters
         $cache_key = 'vrobo_orders_table_' . md5(serialize(array($page, $per_page, $search, $status_filter)));
         $cached_result = wp_cache_get($cache_key, 'vrobo_orders');
@@ -660,58 +678,68 @@ class Vrobo_Order_Handler {
         $total = 0;
         
         // Execute queries based on filter conditions - Direct database queries necessary for custom plugin table
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery -- Direct database queries are necessary for custom plugin table - no WordPress API equivalent exists for complex filtering and pagination on plugin-specific tables
         if (!empty($search) && !empty($status_filter)) {
             // Both search and status filter
             $search_term = '%' . $wpdb->esc_like($search) . '%';
             
             switch ($status_filter) {
                 case 'confirmed':
+                    $status_term = '%' . $wpdb->esc_like('confirmed') . '%';
                     $orders = $wpdb->get_results($wpdb->prepare(
-                        "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE (customer_name LIKE %s OR customer_email LIKE %s OR CAST(order_id AS CHAR) LIKE %s) AND webhook_status = %s ORDER BY created_date DESC LIMIT %d OFFSET %d",
-                        $search_term, $search_term, $search_term, 'sent', $per_page, $offset
+                        "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE (customer_name LIKE %s OR customer_email LIKE %s OR CAST(order_id AS CHAR) LIKE %s) AND tags LIKE %s ORDER BY created_date DESC LIMIT {$per_page} OFFSET {$offset}",
+                        $search_term, $search_term, $search_term, $status_term
                     ));
                     $total = $wpdb->get_var($wpdb->prepare(
-                        "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE (customer_name LIKE %s OR customer_email LIKE %s OR CAST(order_id AS CHAR) LIKE %s) AND webhook_status = %s",
-                        $search_term, $search_term, $search_term, 'sent'
+                        "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE (customer_name LIKE %s OR customer_email LIKE %s OR CAST(order_id AS CHAR) LIKE %s) AND tags LIKE %s",
+                        $search_term, $search_term, $search_term, $status_term
                     ));
                     break;
                 case 'cancelled':
+                    $status_term = '%' . $wpdb->esc_like('cancelled') . '%';
                     $orders = $wpdb->get_results($wpdb->prepare(
-                        "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE (customer_name LIKE %s OR customer_email LIKE %s OR CAST(order_id AS CHAR) LIKE %s) AND (order_status = %s OR webhook_status = %s) ORDER BY created_date DESC LIMIT %d OFFSET %d",
-                        $search_term, $search_term, $search_term, 'cancelled', 'cancelled', $per_page, $offset
+                        "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE (customer_name LIKE %s OR customer_email LIKE %s OR CAST(order_id AS CHAR) LIKE %s) AND tags LIKE %s ORDER BY created_date DESC LIMIT {$per_page} OFFSET {$offset}",
+                        $search_term, $search_term, $search_term, $status_term
                     ));
                     $total = $wpdb->get_var($wpdb->prepare(
-                        "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE (customer_name LIKE %s OR customer_email LIKE %s OR CAST(order_id AS CHAR) LIKE %s) AND (order_status = %s OR webhook_status = %s)",
-                        $search_term, $search_term, $search_term, 'cancelled', 'cancelled'
+                        "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE (customer_name LIKE %s OR customer_email LIKE %s OR CAST(order_id AS CHAR) LIKE %s) AND tags LIKE %s",
+                        $search_term, $search_term, $search_term, $status_term
                     ));
                     break;
                 case 'support':
+                    $status_term = '%' . $wpdb->esc_like('support') . '%';
                     $orders = $wpdb->get_results($wpdb->prepare(
-                        "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE (customer_name LIKE %s OR customer_email LIKE %s OR CAST(order_id AS CHAR) LIKE %s) AND webhook_status = %s ORDER BY created_date DESC LIMIT %d OFFSET %d",
-                        $search_term, $search_term, $search_term, 'failed', $per_page, $offset
+                        "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE (customer_name LIKE %s OR customer_email LIKE %s OR CAST(order_id AS CHAR) LIKE %s) AND tags LIKE %s ORDER BY created_date DESC LIMIT {$per_page} OFFSET {$offset}",
+                        $search_term, $search_term, $search_term, $status_term
                     ));
                     $total = $wpdb->get_var($wpdb->prepare(
-                        "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE (customer_name LIKE %s OR customer_email LIKE %s OR CAST(order_id AS CHAR) LIKE %s) AND webhook_status = %s",
-                        $search_term, $search_term, $search_term, 'failed'
+                        "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE (customer_name LIKE %s OR customer_email LIKE %s OR CAST(order_id AS CHAR) LIKE %s) AND tags LIKE %s",
+                        $search_term, $search_term, $search_term, $status_term
                     ));
                     break;
                 case 'unclear':
+                    $status_term = '%' . $wpdb->esc_like('unclear') . '%';
                     $orders = $wpdb->get_results($wpdb->prepare(
-                        "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE (customer_name LIKE %s OR customer_email LIKE %s OR CAST(order_id AS CHAR) LIKE %s) AND webhook_status = %s ORDER BY created_date DESC LIMIT %d OFFSET %d",
-                        $search_term, $search_term, $search_term, 'skipped', $per_page, $offset
+                        "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE (customer_name LIKE %s OR customer_email LIKE %s OR CAST(order_id AS CHAR) LIKE %s) AND tags LIKE %s ORDER BY created_date DESC LIMIT {$per_page} OFFSET {$offset}",
+                        $search_term, $search_term, $search_term, $status_term
                     ));
                     $total = $wpdb->get_var($wpdb->prepare(
-                        "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE (customer_name LIKE %s OR customer_email LIKE %s OR CAST(order_id AS CHAR) LIKE %s) AND webhook_status = %s",
-                        $search_term, $search_term, $search_term, 'skipped'
+                        "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE (customer_name LIKE %s OR customer_email LIKE %s OR CAST(order_id AS CHAR) LIKE %s) AND tags LIKE %s",
+                        $search_term, $search_term, $search_term, $status_term
                     ));
+                    break;
+                default:
+                    // Invalid status filter - return no results
+                    $orders = array();
+                    $total = 0;
                     break;
             }
         } elseif (!empty($search)) {
             // Search only
             $search_term = '%' . $wpdb->esc_like($search) . '%';
             $orders = $wpdb->get_results($wpdb->prepare(
-                "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE customer_name LIKE %s OR customer_email LIKE %s OR CAST(order_id AS CHAR) LIKE %s ORDER BY created_date DESC LIMIT %d OFFSET %d",
-                $search_term, $search_term, $search_term, $per_page, $offset
+                "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE customer_name LIKE %s OR customer_email LIKE %s OR CAST(order_id AS CHAR) LIKE %s ORDER BY created_date DESC LIMIT {$per_page} OFFSET {$offset}",
+                $search_term, $search_term, $search_term
             ));
             $total = $wpdb->get_var($wpdb->prepare(
                 "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE customer_name LIKE %s OR customer_email LIKE %s OR CAST(order_id AS CHAR) LIKE %s",
@@ -721,58 +749,67 @@ class Vrobo_Order_Handler {
             // Status filter only
             switch ($status_filter) {
                 case 'confirmed':
+                    $status_term = '%' . $wpdb->esc_like('confirmed') . '%';
                     $orders = $wpdb->get_results($wpdb->prepare(
-                        "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE webhook_status = %s ORDER BY created_date DESC LIMIT %d OFFSET %d",
-                        'sent', $per_page, $offset
+                        "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE tags LIKE %s ORDER BY created_date DESC LIMIT {$per_page} OFFSET {$offset}",
+                        $status_term
                     ));
                     $total = $wpdb->get_var($wpdb->prepare(
-                        "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE webhook_status = %s",
-                        'sent'
+                        "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE tags LIKE %s",
+                        $status_term
                     ));
                     break;
                 case 'cancelled':
+                    $status_term = '%' . $wpdb->esc_like('cancelled') . '%';
                     $orders = $wpdb->get_results($wpdb->prepare(
-                        "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE order_status = %s OR webhook_status = %s ORDER BY created_date DESC LIMIT %d OFFSET %d",
-                        'cancelled', 'cancelled', $per_page, $offset
+                        "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE tags LIKE %s ORDER BY created_date DESC LIMIT {$per_page} OFFSET {$offset}",
+                        $status_term
                     ));
                     $total = $wpdb->get_var($wpdb->prepare(
-                        "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE order_status = %s OR webhook_status = %s",
-                        'cancelled', 'cancelled'
+                        "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE tags LIKE %s",
+                        $status_term
                     ));
                     break;
                 case 'support':
+                    $status_term = '%' . $wpdb->esc_like('support') . '%';
                     $orders = $wpdb->get_results($wpdb->prepare(
-                        "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE webhook_status = %s ORDER BY created_date DESC LIMIT %d OFFSET %d",
-                        'failed', $per_page, $offset
+                        "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE tags LIKE %s ORDER BY created_date DESC LIMIT {$per_page} OFFSET {$offset}",
+                        $status_term
                     ));
                     $total = $wpdb->get_var($wpdb->prepare(
-                        "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE webhook_status = %s",
-                        'failed'
+                        "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE tags LIKE %s",
+                        $status_term
                     ));
                     break;
                 case 'unclear':
+                    $status_term = '%' . $wpdb->esc_like('unclear') . '%';
                     $orders = $wpdb->get_results($wpdb->prepare(
-                        "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE webhook_status = %s ORDER BY created_date DESC LIMIT %d OFFSET %d",
-                        'skipped', $per_page, $offset
+                        "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE tags LIKE %s ORDER BY created_date DESC LIMIT {$per_page} OFFSET {$offset}",
+                        $status_term
                     ));
                     $total = $wpdb->get_var($wpdb->prepare(
-                        "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE webhook_status = %s",
-                        'skipped'
+                        "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE tags LIKE %s",
+                        $status_term
                     ));
+                    break;
+                default:
+                    // Invalid status filter - return no results
+                    $orders = array();
+                    $total = 0;
                     break;
             }
         } else {
             // No filters
-            $orders = $wpdb->get_results($wpdb->prepare(
-                "SELECT * FROM `{$wpdb->prefix}vrobo_orders` ORDER BY created_date DESC LIMIT %d OFFSET %d",
-                $per_page, $offset
-            ));
+            $orders = $wpdb->get_results(
+                "SELECT * FROM `{$wpdb->prefix}vrobo_orders` ORDER BY created_date DESC LIMIT {$per_page} OFFSET {$offset}"
+            );
             $total = $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders`");
         }
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery
         
         // Check for database errors
         if ($wpdb->last_error) {
-            wp_send_json_error('Database error');
+            wp_send_json_error('Database error: ' . $wpdb->last_error);
             return;
         }
         

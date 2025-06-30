@@ -28,20 +28,20 @@ if (isset($_POST['connect_api_key']) && isset($_POST['vrobo_settings_nonce']) &&
             if ($registration_result['success']) {
                 if ($registration_result['is_valid']) {
                     update_option('vrobo_wc_api_key_validated', 1);
-                    echo '<div class="notice notice-success"><p>API key connected and validated successfully!</p></div>';
+                    echo '<div class="notice notice-success"><p>' . esc_html__('API key connected and validated successfully!', 'vrobo') . '</p></div>';
                 } else {
                     update_option('vrobo_wc_api_key_validated', 0);
-                    echo '<div class="notice notice-error"><p>API key saved but validation failed. The API key is not valid.</p></div>';
+                    echo '<div class="notice notice-error"><p>' . esc_html__('API key saved but validation failed. The API key is not valid.', 'vrobo') . '</p></div>';
                 }
             } else {
                 update_option('vrobo_wc_api_key_validated', 0);
-                echo '<div class="notice notice-warning"><p>API key saved but validation request failed: ' . esc_html($registration_result['message']) . '</p></div>';
+                echo '<div class="notice notice-warning"><p>' . esc_html__('API key saved but validation request failed: ', 'vrobo') . esc_html($registration_result['message']) . '</p></div>';
             }
         } else {
             // Clear API key if empty
             update_option('vrobo_wc_api_key', '');
             update_option('vrobo_wc_api_key_validated', 0);
-            echo '<div class="notice notice-info"><p>API key cleared.</p></div>';
+            echo '<div class="notice notice-info"><p>' . esc_html__('API key cleared.', 'vrobo') . '</p></div>';
         }
     }
 }
@@ -51,7 +51,7 @@ if (isset($_POST['submit_cod']) && isset($_POST['vrobo_cod_settings_nonce']) && 
     // Update exclude paid orders setting
     $exclude_paid_orders = isset($_POST['vrobo_exclude_paid_orders']) ? 1 : 0;
     update_option('vrobo_wc_exclude_paid_orders', $exclude_paid_orders);
-    echo '<div class="notice notice-success"><p>COD settings saved successfully!</p></div>';
+    echo '<div class="notice notice-success"><p>' . esc_html__('COD settings saved successfully!', 'vrobo') . '</p></div>';
 }
 
 // Generate WooCommerce API credentials if they don't exist
@@ -150,6 +150,7 @@ function vrobo_generate_wc_api_credentials() {
         // as WooCommerce doesn't provide a public API for programmatic key generation.
         // This is the standard method used by WooCommerce itself for API key creation.
         // No caching used as this is a one-time API key creation operation.
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery -- This direct database call is necessary for WooCommerce API key creation as WooCommerce doesn't provide a public API for programmatic key generation. This is the standard method used by WooCommerce itself for API key creation.
         $result = $wpdb->insert(
             $wpdb->prefix . 'woocommerce_api_keys',
             array(
@@ -163,6 +164,7 @@ function vrobo_generate_wc_api_credentials() {
             ),
             array('%d', '%s', '%s', '%s', '%s', '%s', '%s')
         );
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery
         
         if ($result) {
             return array(
@@ -244,50 +246,4 @@ function vrobo_generate_wc_api_credentials() {
     </div>
 </div>
 
-<style>
-.vrobo-settings-container {
-    max-width: 800px;
-}
-
-.vrobo-settings-section {
-    background: #fff;
-    border: 1px solid #ccd0d4;
-    border-radius: 4px;
-    padding: 20px;
-    margin-bottom: 20px;
-}
-
-.vrobo-settings-section h2 {
-    margin-top: 0;
-    border-bottom: 1px solid #eee;
-    padding-bottom: 10px;
-}
-
-.vrobo-integration-info ol, .vrobo-integration-info ul {
-    margin-left: 20px;
-}
-
-.vrobo-integration-info li {
-    margin-bottom: 8px;
-}
-</style>
-
-<script type="text/javascript">
-jQuery(document).ready(function($) {
-    // Simple form validation - no loading states since we're using regular POST
-    $('form').on('submit', function(e) {
-        var form = $(this);
-        
-        // Only validate the API key form
-        if (form.find('input[name="connect_api_key"]').length > 0) {
-            var apiKey = $('#vrobo_api_key').val().trim();
-            
-            if (apiKey === '') {
-                alert('Please enter an API key before connecting.');
-                e.preventDefault();
-                return false;
-            }
-        }
-    });
-});
-</script> 
+<!-- Styles and scripts are now properly enqueued via WordPress hooks --> 

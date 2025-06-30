@@ -3,11 +3,12 @@
  * Plugin Name: Vrobo
  * Plugin URI: https://vrobo.co
  * Description: Custom order management plugin with API integration and automation for e-commerce stores
- * Version: 2.2.1
+ * Version: 2.3.0
  * Author: Vrobo
  * License: GPL v2 or later
  * Text Domain: vrobo
- * Domain Path: /languages
+ * Requires at least: 5.0
+ * Requires PHP: 7.4
  * WC requires at least: 3.0
  * WC tested up to: 8.0
  * Requires Plugins: woocommerce
@@ -21,7 +22,7 @@ if (!defined('ABSPATH')) {
 // Define plugin constants
 define('VROBO_WC_PLUGIN_URL', plugin_dir_url(__FILE__));
 define('VROBO_WC_PLUGIN_PATH', plugin_dir_path(__FILE__));
-define('VROBO_WC_VERSION', '2.2.1');
+define('VROBO_WC_VERSION', '2.3.0');
 
 // Check if WooCommerce is active
 if (!in_array('woocommerce/woocommerce.php', apply_filters('active_plugins', get_option('active_plugins')))) {
@@ -69,13 +70,14 @@ class Vrobo {
     }
     
     public function init() {
-        // Initialize plugin components
+        // Initialize plugin components with output buffering for safety
+        ob_start();
         new Vrobo_Order_Handler();
         new Vrobo_API_Handler();
         new Vrobo_Database();
+        ob_end_clean();
         
-        // Load text domain
-        load_plugin_textdomain('vrobo', false, dirname(plugin_basename(__FILE__)) . '/languages');
+        // WordPress 4.6+ automatically loads translations, no need for load_plugin_textdomain
     }
     
     /**
@@ -198,11 +200,19 @@ class Vrobo {
     }
     
     public function admin_enqueue_scripts() {
+        // Only enqueue on plugin admin pages
+        $current_screen = get_current_screen();
+        if (!$current_screen || strpos($current_screen->id, 'vrobo') === false) {
+            return;
+        }
+        
         wp_enqueue_style('vrobo-wc-admin-style', VROBO_WC_PLUGIN_URL . 'assets/css/admin-style.css', array(), VROBO_WC_VERSION);
         wp_enqueue_script('vrobo-wc-admin-script', VROBO_WC_PLUGIN_URL . 'assets/js/admin-script.js', array('jquery'), VROBO_WC_VERSION, true);
         
+        // Add nonce for AJAX security
         wp_localize_script('vrobo-wc-admin-script', 'vrobo_ajax', array(
             'ajax_url' => admin_url('admin-ajax.php'),
+            'admin_url' => admin_url(),
             'nonce' => wp_create_nonce('vrobo_nonce')
         ));
         
@@ -233,11 +243,22 @@ new Vrobo();
 // Activation hook
 register_activation_hook(__FILE__, 'vrobo_wc_activate');
 function vrobo_wc_activate() {
-    // Create database tables
-    Vrobo_Database::create_tables();
+    // Suppress any output during activation
+    ob_start();
     
-    // Flush rewrite rules to ensure custom post statuses work
-    flush_rewrite_rules();
+    try {
+        // Create database tables
+        Vrobo_Database::create_tables();
+        
+        // Flush rewrite rules to ensure custom post statuses work
+        flush_rewrite_rules();
+    } catch (Exception $e) {
+        // Log error but don't output anything
+        error_log('Vrobo activation error: ' . $e->getMessage());
+    }
+    
+    // Clean any output buffer
+    ob_end_clean();
 }
 
 // Deactivation hook

@@ -15,8 +15,7 @@ class Vrobo_Database {
     }
     
     private function init_hooks() {
-        // Hook for AJAX actions
-        add_action('wp_ajax_vrobo_get_orders_table', array($this, 'ajax_get_orders_table'));
+        // Hook for AJAX actions (orders table handled by Order Handler class)
         add_action('wp_ajax_vrobo_delete_order', array($this, 'ajax_delete_order'));
         add_action('wp_ajax_vrobo_sync_order', array($this, 'ajax_sync_order'));
     }
@@ -65,8 +64,17 @@ class Vrobo_Database {
         ) $charset_collate;";
         
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
-        dbDelta($orders_sql);
-        dbDelta($logs_sql);
+        
+        // Suppress any output from dbDelta
+        ob_start();
+        $result1 = dbDelta($orders_sql);
+        $result2 = dbDelta($logs_sql);
+        ob_end_clean();
+        
+        // Log results if needed (but don't output)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log('Vrobo tables created: Orders=' . (is_array($result1) ? 'success' : 'failed') . ', Logs=' . (is_array($result2) ? 'success' : 'failed'));
+        }
     }
     
     /**
@@ -87,6 +95,7 @@ class Vrobo_Database {
         // Build query properly without direct variable interpolation
         if (!empty($search)) {
             $search_param = '%' . $wpdb->esc_like($search) . '%';
+            // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct database query is necessary for custom plugin table - no WordPress API equivalent. No caching used as this is dynamic search with user input.
             $orders = $wpdb->get_results($wpdb->prepare(
                 "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE customer_email LIKE %s OR customer_name LIKE %s OR order_id = %d ORDER BY created_date DESC LIMIT %d OFFSET %d",
                 $search_param,
@@ -95,12 +104,15 @@ class Vrobo_Database {
                 $limit,
                 $offset
             ));
+            // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         } else {
+            // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct database query is necessary for custom plugin table - no WordPress API equivalent. No caching used as this is dynamic pagination query.
             $orders = $wpdb->get_results($wpdb->prepare(
                 "SELECT * FROM `{$wpdb->prefix}vrobo_orders` ORDER BY created_date DESC LIMIT %d OFFSET %d",
                 $limit,
                 $offset
             ));
+            // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         }
         
         return $orders;
@@ -114,14 +126,18 @@ class Vrobo_Database {
         
         if (!empty($search)) {
             $search_param = '%' . $wpdb->esc_like($search) . '%';
+            // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct database query is necessary for custom plugin table - no WordPress API equivalent. No caching used as this is dynamic search count.
             $count = $wpdb->get_var($wpdb->prepare(
                 "SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE customer_email LIKE %s OR customer_name LIKE %s OR order_id = %d",
                 $search_param,
                 $search_param,
                 intval($search)
             ));
+            // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         } else {
+            // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct database query is necessary for custom plugin table - no WordPress API equivalent. No caching used as this is dynamic count query.
             $count = $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders`");
+            // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         }
         
         return intval($count);
@@ -133,10 +149,12 @@ class Vrobo_Database {
     public function get_order($order_id) {
         global $wpdb;
         
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct database query is necessary for custom plugin table - no WordPress API equivalent. No caching used as this is a single order fetch by ID.
         $order = $wpdb->get_row($wpdb->prepare(
             "SELECT * FROM `{$wpdb->prefix}vrobo_orders` WHERE order_id = %d",
             $order_id
         ));
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         
         return $order;
     }
@@ -151,6 +169,7 @@ class Vrobo_Database {
         
         $data['updated_date'] = current_time('mysql');
         
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct database query is necessary for custom plugin table - no WordPress API equivalent. No caching used as this is a real-time order update that must be immediate.
         $result = $wpdb->update(
             $table_name,
             $data,
@@ -158,6 +177,7 @@ class Vrobo_Database {
             null,
             array('%d')
         );
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         
         return $result !== false;
     }
@@ -254,11 +274,13 @@ class Vrobo_Database {
         
         $table_name = $wpdb->prefix . 'vrobo_orders';
         
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct database query is necessary for custom plugin table - no WordPress API equivalent. No caching used as this is a real-time deletion operation.
         $result = $wpdb->delete(
             $table_name,
             array('order_id' => $order_id),
             array('%d')
         );
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         
         return $result !== false;
     }
@@ -271,6 +293,7 @@ class Vrobo_Database {
         
         $logs_table = $wpdb->prefix . 'vrobo_logs';
         
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct database query is necessary for custom plugin logging table - no WordPress API equivalent. No caching used as this is real-time logging.
         $wpdb->insert(
             $logs_table,
             array(
@@ -282,6 +305,7 @@ class Vrobo_Database {
             ),
             array('%d', '%s', '%s', '%s', '%s')
         );
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
     }
     
     /**
@@ -290,47 +314,21 @@ class Vrobo_Database {
     public function get_order_logs($order_id, $limit = 50) {
         global $wpdb;
         
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct database query is necessary for custom plugin logging table - no WordPress API equivalent. No caching used as logs are time-sensitive data.
         $logs = $wpdb->get_results($wpdb->prepare(
             "SELECT * FROM `{$wpdb->prefix}vrobo_logs` WHERE order_id = %d ORDER BY created_date DESC LIMIT %d",
             $order_id,
             $limit
         ));
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         
         return $logs;
     }
     
     /**
-     * AJAX handler for getting orders table
+     * Note: ajax_get_orders_table method removed to avoid conflict with Order Handler class
+     * The Order Handler class provides a more comprehensive AJAX handler with filtering support
      */
-    public function ajax_get_orders_table() {
-        if (!isset($_POST['nonce']) || !wp_verify_nonce(sanitize_text_field(wp_unslash($_POST['nonce'])), 'vrobo_nonce')) {
-            wp_die('Security check failed');
-        }
-        
-        if (!current_user_can('manage_options')) {
-            wp_die('Permission denied');
-        }
-        
-        $page = isset($_POST['page']) ? intval($_POST['page']) : 1;
-        $per_page = isset($_POST['per_page']) ? intval($_POST['per_page']) : 20;
-        $search = isset($_POST['search']) ? sanitize_text_field(wp_unslash($_POST['search'])) : '';
-        
-        $offset = ($page - 1) * $per_page;
-        $orders = $this->get_orders($per_page, $offset, $search);
-        $total = $this->get_orders_count($search);
-        
-        $response = array(
-            'orders' => $orders,
-            'pagination' => array(
-                'page' => $page,
-                'per_page' => $per_page,
-                'total' => $total,
-                'total_pages' => ceil($total / $per_page)
-            )
-        );
-        
-        wp_send_json_success($response);
-    }
     
     /**
      * AJAX handler for deleting an order
@@ -408,6 +406,7 @@ class Vrobo_Database {
     public function get_stats() {
         global $wpdb;
         
+        // phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching -- Direct database queries are necessary for custom plugin statistics - no WordPress API equivalent. No caching used as stats need to be real-time.
         $stats = array(
             'total_orders' => $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders`"),
             'pending_api' => $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE webhook_status = 'pending'"),
@@ -417,6 +416,7 @@ class Vrobo_Database {
             'total_revenue' => $wpdb->get_var("SELECT SUM(order_total) FROM `{$wpdb->prefix}vrobo_orders`"),
             'recent_orders' => $wpdb->get_var("SELECT COUNT(*) FROM `{$wpdb->prefix}vrobo_orders` WHERE created_date >= DATE_SUB(NOW(), INTERVAL 24 HOUR)")
         );
+        // phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
         
         return $stats;
     }

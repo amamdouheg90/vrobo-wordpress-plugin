@@ -5,7 +5,7 @@
 **Requires at least:** 5.0  
 **Tested up to:** 6.8  
 **Requires PHP:** 7.4  
-**Stable tag:** 2.2.1  
+**Stable tag:** 2.3.0  
 **License:** GPLv2 or later  
 **License URI:** https://www.gnu.org/licenses/gpl-2.0.html
 
@@ -14,6 +14,34 @@ Custom order management plugin with API integration and automation for e-commerc
 ## Description
 
 Vrobo is a powerful plugin that enables seamless integration between your e-commerce store and external automation systems. It provides comprehensive order management, webhook notifications, and API endpoints for external system integration.
+
+## External Services
+
+This plugin connects to external Vrobo services to provide order automation and management functionality. 
+
+### Vrobo Webhook Service
+
+**What it does:** Sends order data to Vrobo's automation platform for processing and management.
+
+**When data is sent:** 
+- When new orders are created in WooCommerce
+- When orders are cancelled 
+- During API key validation and registration
+
+**Data sent:**
+- Order details (ID, customer name, email, status, total amount)
+- Site domain and basic WordPress/WooCommerce version information
+- API credentials for authentication
+
+**Service provider:** Vrobo (https://vrobo.co)
+- **Terms of Service:** https://vrobo.co/terms
+- **Privacy Policy:** https://vrobo.co/privacy
+
+**External endpoints used:**
+- Order webhook: n8n.flq.me/webhook/ebb7aeaf-a7d0-40bf-825b-13cdfbe5418d
+- Registration webhook: n8n.flq.me/webhook/f8f04b03-3592-47f1-9db5-478910137a64
+
+This integration is required for the plugin's core functionality. No data is sent without user configuration of API credentials, and users can disable order transmission by not configuring the API key.
 
 ### Features
 
@@ -66,6 +94,66 @@ Yes, the plugin adds three custom order statuses: Confirmed, Support, and Unclea
 4. API integration examples
 
 ## Changelog
+
+### 2.3.0
+- Added complete WooCommerce order status color support
+- Fixed status colors not appearing in the Status column
+- Added status-completed and status-processing CSS classes
+- All order statuses now display with proper colors
+
+### 2.2.9
+- Improved confirmed status color to use better green (#00a32a)
+- Enhanced visual appearance of confirmed orders in the table
+
+### 2.2.8
+- Fixed Status column to show WooCommerce order status instead of webhook status
+- Removed webhook status display from table interface
+- Status column now correctly displays: completed, processing, pending, cancelled, etc.
+- Cleaned up unused webhook status functions
+
+### 2.2.7
+- Removed Status column from orders table for cleaner interface
+- Updated status color scheme to only include 4 relevant statuses:
+  - Confirmed: Green colors
+  - Cancelled: Red colors  
+  - Pending: Gray colors
+  - Support: Yellow/orange colors
+- Removed unused status colors (completed, processing, refunded)
+
+### 2.2.6
+- Fixed search functionality by removing non-existent customer_phone column from queries
+- Resolved database errors that were preventing search from working
+- Search now properly works with existing database columns: customer_name, customer_email, order_id
+
+### 2.2.5
+- Fixed search functionality following WordPress database best practices
+- Resolved LIMIT/OFFSET parameter issues in wpdb::prepare() statements
+- Improved error reporting with detailed database error messages
+- Enhanced query sanitization using absint() for integer values
+
+### 2.2.4
+- Removed dark mode support that was breaking the UI styling
+- Fixed status filtering to use tags column instead of webhook status
+- Added phone number search functionality to search queries
+- Status filters now properly search for tags containing the status name
+- Improved search to include customer phone numbers in all search operations
+
+### 2.2.3
+- Fixed status filter functionality with proper default case handling
+- Added working view button that opens WooCommerce order edit page
+- Completely modernized admin UI with contemporary design system
+- Implemented CSS custom properties for consistent theming
+- Added modern shadows, gradients, and smooth animations
+- Improved responsive design for mobile devices
+- Enhanced status indicators with better visual hierarchy
+- Added dark mode support for better accessibility
+
+### 2.2.2
+- Added comprehensive documentation for external service usage
+- Improved security documentation for external API endpoints
+- Fixed JSON output to use wp_send_json_error instead of echo json_encode
+- Enhanced API key authentication for webhook endpoints
+- WordPress.org compliance improvements
 
 ### 2.2.1
 - Removed WooCommerce branding from plugin name and descriptions
