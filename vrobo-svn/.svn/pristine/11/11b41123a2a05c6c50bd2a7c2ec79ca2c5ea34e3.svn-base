@@ -1,0 +1,101 @@
+=== Vrobo ===
+Contributors: ahmedhussein1990
+Tags: woocommerce, orders, management, webhook, api
+Requires at least: 5.0
+Tested up to: 6.6
+Requires PHP: 7.4
+Stable tag: 2.2.1
+License: GPLv2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+
+Advanced WooCommerce order management plugin with external API integration and webhook support.
+
+== Description ==
+
+Vrobo is a comprehensive WooCommerce order management plugin that provides advanced functionality for handling orders, integrating with external APIs, and managing webhooks. Perfect for businesses that need sophisticated order processing capabilities.
+
+**Key Features:**
+
+* **Advanced Order Management**: Comprehensive order handling with custom statuses and tracking
+* **External API Integration**: Seamless integration with external systems via secure API endpoints
+* **Webhook Support**: Real-time order updates and notifications
+* **Custom Database Tables**: Optimized data storage for enhanced performance
+* **Admin Dashboard**: Intuitive interface for managing orders and settings
+* **Security First**: Built with WordPress security best practices including nonce verification and data sanitization
+
+**Admin Features:**
+
+* Orders management table with advanced filtering
+* Configurable settings panel
+* API key management
+* Webhook status monitoring
+* Order status tracking
+
+**Developer Features:**
+
+* Clean, well-documented code
+* WordPress coding standards compliant
+* Extensible architecture
+* Custom hooks and filters
+* REST API endpoints
+
+== Installation ==
+
+1. Upload the plugin files to the `/wp-content/plugins/vrobo` directory, or install the plugin through the WordPress plugins screen directly.
+2. Activate the plugin through the 'Plugins' screen in WordPress
+3. Navigate to WooCommerce > Vrobo Settings to configure the plugin
+4. Set up your API keys and webhook endpoints as needed
+
+== Frequently Asked Questions ==
+
+= Is this plugin compatible with the latest version of WooCommerce? =
+
+Yes, Vrobo is regularly updated to ensure compatibility with the latest versions of WooCommerce and WordPress.
+
+= Can I use this plugin with other WooCommerce extensions? =
+
+Yes, Vrobo is designed to work alongside other WooCommerce extensions without conflicts.
+
+= How do I configure the API integration? =
+
+Navigate to WooCommerce > Vrobo Settings in your admin dashboard to configure API keys and endpoints.
+
+= Is the plugin secure? =
+
+Yes, Vrobo follows WordPress security best practices including proper nonce verification, data sanitization, and secure API authentication.
+
+== Screenshots ==
+
+1. Admin orders management interface
+2. Plugin settings configuration panel
+3. Order details and tracking view
+
+== Changelog ==
+
+= 2.2.1 =
+* Fixed WordPress coding standards compliance issues
+* Improved nonce verification for enhanced security
+* Optimized database queries with proper caching
+* Enhanced API error handling
+* Updated documentation
+
+= 2.2.0 =
+* Added advanced order filtering capabilities
+* Improved webhook reliability
+* Enhanced admin interface
+* Bug fixes and performance improvements
+
+= 2.1.0 =
+* Initial release with core functionality
+* Order management system
+* API integration capabilities
+* Admin dashboard implementation
+
+== Upgrade Notice ==
+
+= 2.2.1 =
+This version includes important security improvements and WordPress coding standards compliance. Update recommended.
+
+== Support ==
+
+For support and documentation, please visit the plugin's support forum or contact the developer. 

@@ -1,0 +1,629 @@
+/* Vrobo WooCommerce Admin Styles */
+
+.vrobo-stats-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin: 20px 0;
+}
+
+.vrobo-stat-card {
+    background: #fff;
+    border: 1px solid #c3c4c7;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s ease;
+}
+
+.vrobo-stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.vrobo-stat-card h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    color: #50575e;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.vrobo-stat-number {
+    font-size: 36px;
+    font-weight: bold;
+    color: #2271b1;
+    margin: 0;
+}
+
+.vrobo-stat-number.vrobo-pending {
+    color: #dba617;
+}
+
+.vrobo-stat-number.vrobo-success {
+    color: #00a32a;
+}
+
+.vrobo-stat-number.vrobo-error {
+    color: #d63638;
+}
+
+.vrobo-controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin: 20px 0;
+    padding: 15px;
+    background: #f6f7f7;
+    border-radius: 8px;
+    gap: 20px;
+}
+
+.vrobo-search-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.vrobo-search-container input[type="text"] {
+    min-width: 300px;
+}
+
+.vrobo-actions {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.vrobo-loading {
+    text-align: center;
+    padding: 40px;
+    background: #f6f7f7;
+    border-radius: 8px;
+    margin: 20px 0;
+}
+
+.vrobo-loading .spinner {
+    float: none;
+    margin-right: 10px;
+}
+
+#vrobo-orders-table {
+    margin-top: 20px;
+}
+
+.vrobo-actions-cell {
+    white-space: nowrap;
+}
+
+.vrobo-actions-cell .button {
+    margin-right: 5px;
+    margin-bottom: 5px;
+}
+
+.api-status {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.api-status.success {
+    background: #d4edda;
+    color: #155724;
+}
+
+.api-status.error {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.api-status.pending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.status-completed {
+    color: #00a32a;
+    font-weight: bold;
+}
+
+.status-processing {
+    color: #dba617;
+    font-weight: bold;
+}
+
+.status-pending {
+    color: #d63638;
+    font-weight: bold;
+}
+
+.status-cancelled {
+    color: #646970;
+    font-weight: bold;
+}
+
+.status-refunded {
+    color: #d63638;
+    font-weight: bold;
+}
+
+/* Modal Styles */
+.vrobo-modal {
+    position: fixed;
+    z-index: 100000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.vrobo-modal-content {
+    background-color: #fff;
+    margin: 5% auto;
+    padding: 0;
+    border-radius: 8px;
+    width: 80%;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.vrobo-modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #c3c4c7;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #f6f7f7;
+    border-radius: 8px 8px 0 0;
+}
+
+.vrobo-modal-header h2 {
+    margin: 0;
+    color: #2271b1;
+}
+
+.vrobo-modal-close {
+    color: #646970;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.vrobo-modal-close:hover {
+    color: #d63638;
+}
+
+.vrobo-modal-body {
+    padding: 20px;
+}
+
+.vrobo-modal-body textarea {
+    width: 100%;
+    resize: vertical;
+}
+
+.vrobo-modal-body label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: bold;
+}
+
+/* Settings Styles */
+.vrobo-settings-container {
+    max-width: 800px;
+    margin: 20px 0;
+}
+
+.vrobo-settings-section {
+    background: #fff;
+    padding: 20px;
+    margin-bottom: 20px;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+}
+
+.vrobo-settings-section h2 {
+    margin-top: 0;
+    color: #23282d;
+}
+
+.vrobo-status-indicator {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-weight: bold;
+    text-transform: uppercase;
+}
+
+.vrobo-status-connected {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.vrobo-status-disconnected {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.vrobo-api-credentials {
+    background: #f9f9f9;
+    padding: 15px;
+    border-left: 4px solid #0073aa;
+    margin: 15px 0;
+}
+
+.vrobo-api-credentials h4 {
+    margin-top: 0;
+    color: #0073aa;
+}
+
+.vrobo-api-credentials code {
+    display: block;
+    background: #fff;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    margin: 5px 0;
+    font-size: 12px;
+    word-break: break-all;
+}
+
+/* Orders Table Styles */
+.vrobo-filters-container {
+    display: flex;
+    gap: 30px;
+    margin: 20px 0;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+}
+
+.vrobo-search-section,
+.vrobo-status-section {
+    flex: 1;
+}
+
+.vrobo-search-section h3,
+.vrobo-status-section h3 {
+    margin: 0 0 10px 0;
+    font-size: 14px;
+    font-weight: 600;
+    color: #23282d;
+}
+
+.vrobo-search-wrapper {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.vrobo-search-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.vrobo-search-button,
+.vrobo-clear-button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 13px;
+}
+
+.vrobo-search-button {
+    background: #0073aa;
+    color: #fff;
+}
+
+.vrobo-clear-button {
+    background: #666;
+    color: #fff;
+}
+
+.vrobo-status-filters {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.vrobo-status-filter {
+    padding: 6px 12px;
+    border: 1px solid #ddd;
+    background: #fff;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: all 0.2s;
+}
+
+.vrobo-status-filter:hover {
+    background: #f7f7f7;
+}
+
+.vrobo-status-filter.active {
+    background: #0073aa;
+    color: #fff;
+    border-color: #0073aa;
+}
+
+.vrobo-loading {
+    text-align: center;
+    padding: 40px;
+    color: #666;
+}
+
+.vrobo-table-container {
+    background: #fff;
+    border: 1px solid #ccd0d4;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .04);
+}
+
+.vrobo-orders-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.vrobo-orders-table th,
+.vrobo-orders-table td {
+    padding: 12px;
+    text-align: left;
+    border-bottom: 1px solid #eee;
+}
+
+.vrobo-orders-table th {
+    background: #f9f9f9;
+    font-weight: 600;
+    color: #23282d;
+}
+
+.vrobo-orders-table tbody tr:hover {
+    background: #f9f9f9;
+}
+
+.customer-info {
+    font-size: 13px;
+}
+
+.customer-name {
+    font-weight: 600;
+    color: #23282d;
+}
+
+.customer-email {
+    color: #666;
+    margin-top: 2px;
+}
+
+.order-status-circle,
+.last-action-circle {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+.order-status-circle.pending,
+.last-action-circle.pending {
+    background: #f39c12;
+}
+
+.order-status-circle.processing,
+.last-action-circle.sent {
+    background: #3498db;
+}
+
+.order-status-circle.completed,
+.last-action-circle.confirmed {
+    background: #27ae60;
+}
+
+.order-status-circle.cancelled,
+.last-action-circle.cancelled {
+    background: #e74c3c;
+}
+
+.order-status-circle.failed,
+.last-action-circle.failed {
+    background: #e67e22;
+}
+
+.order-status-circle.support,
+.last-action-circle.support {
+    background: #9b59b6;
+}
+
+.order-status-circle.unclear,
+.last-action-circle.unclear {
+    background: #95a5a6;
+}
+
+.note-cell {
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+.cancel-order-btn {
+    padding: 4px 8px;
+    font-size: 11px;
+    border-radius: 3px;
+}
+
+.no-orders {
+    text-align: center;
+    color: #666;
+    font-style: italic;
+    padding: 40px;
+}
+
+.vrobo-pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-top: 1px solid #eee;
+    background: #fafafa;
+}
+
+.vrobo-pagination-info {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #666;
+}
+
+.vrobo-per-page-select {
+    padding: 4px;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+}
+
+.vrobo-pagination-controls {
+    display: flex;
+    gap: 5px;
+}
+
+.pagination-btn {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 3px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .vrobo-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .vrobo-search-container {
+        justify-content: center;
+    }
+
+    .vrobo-search-container input[type="text"] {
+        min-width: auto;
+        flex: 1;
+    }
+
+    .vrobo-actions {
+        justify-content: center;
+    }
+
+    .vrobo-stats-container {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    }
+
+    .vrobo-modal-content {
+        width: 95%;
+        margin: 10% auto;
+    }
+
+    .vrobo-actions-cell .button {
+        display: block;
+        width: 100%;
+        margin-bottom: 5px;
+        margin-right: 0;
+    }
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+    .vrobo-stat-card {
+        background: #1d2327;
+        border-color: #3c434a;
+        color: #f0f0f1;
+    }
+
+    .vrobo-stat-card h3 {
+        color: #a7aaad;
+    }
+
+    .vrobo-controls {
+        background: #1d2327;
+        color: #f0f0f1;
+    }
+
+    .vrobo-loading {
+        background: #1d2327;
+        color: #f0f0f1;
+    }
+}
+
+/* Animation for loading states */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.vrobo-stat-card,
+.vrobo-settings-section {
+    animation: fadeIn 0.3s ease;
+}
+
+/* Tooltip styles */
+.vrobo-tooltip {
+    position: relative;
+    cursor: help;
+}
+
+.vrobo-tooltip:hover::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #23282d;
+    color: #f1f1f1;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 12px;
+    white-space: nowrap;
+    z-index: 1000;
+}
+
+/* Success/Error messages */
+.vrobo-message {
+    padding: 12px;
+    margin: 15px 0;
+    border-radius: 6px;
+    font-weight: bold;
+}
+
+.vrobo-message.success {
+    background: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
+
+.vrobo-message.error {
+    background: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
